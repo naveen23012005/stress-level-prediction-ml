@@ -1,0 +1,13 @@
+🔗 **Live Demo:**  
+https://stress-prediction-app.onrender.com/
+
+Users can enter lifestyle information such as:
+
+- Age
+- Screen time
+- Sleep duration
+- Caffeine intake
+- Physical activity
+- Notifications received
+
+The system then predicts the user's **stress level in real time**.
