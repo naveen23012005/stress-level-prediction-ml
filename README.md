@@ -85,8 +85,8 @@ The **Support Vector Regression (SVR)** model achieved the best performance.
 
 Model evaluation metrics:
 
-- **RMSE:** 0.39
-- **R² Score:** High predictive performance
+- **R² Score:** 0.947902966869621
+
 
 This indicates that the model can accurately predict stress levels based on lifestyle and smartphone usage patterns.
 
