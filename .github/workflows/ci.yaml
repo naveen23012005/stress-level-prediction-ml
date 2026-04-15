@@ -1,0 +1,42 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ "main", "temp" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+
+    # ✅ Step 1: Checkout code
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # ✅ Step 2: Setup Python
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.10
+
+    # ✅ Step 3: Install dependencies
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        pip install boto3 pytest awscli
+
+    # ✅ Step 4: Configure AWS
+    - name: Configure AWS
+      run: |
+        aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws configure set default.region ap-south-1
+
+    # ✅ Step 5: Create model folder
+    - name: Create model folder
+      run: mkdir -p model
+
+    # ✅ Step 6: Download model from S3
+    - name: Download Model
+      run: python app.py

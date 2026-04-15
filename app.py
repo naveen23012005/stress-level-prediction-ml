@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import joblib
 import boto3
-
+import pickle
 def download_model():
     s3 = boto3.client('s3')
 
