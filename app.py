@@ -3,7 +3,6 @@ import pandas as pd
 import joblib
 import os
 import boto3
-import pickle
 
 def download_model():
     os.makedirs("model", exist_ok=True)  
@@ -16,7 +15,7 @@ def download_model():
         "model/model.pkl"
     )
 download_model()
-model = pickle.load(open("model/model.pkl", "rb"))
+model = joblib.load("model/model.pkl")
 
 
 st.title("Stress Level Prediction App")
