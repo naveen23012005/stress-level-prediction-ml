@@ -40,3 +40,7 @@ jobs:
     # ✅ Step 6: Download model from S3
     - name: Download Model
       run: python app.py
+    #test
+    - name: Run Tests
+      run: pytest -v
+    
