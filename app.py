@@ -6,7 +6,7 @@ import boto3
 import pickle
 
 def download_model():
-    os.makedirs("model", exist_ok=True)  # ✅ creates folder automatically
+    os.makedirs("model", exist_ok=True)  
 
     s3 = boto3.client('s3')
 
@@ -15,9 +15,7 @@ def download_model():
         "stress_model.pkl",
         "model/model.pkl"
     )
-
 download_model()
-
 model = pickle.load(open("model/model.pkl", "rb"))
 
 
