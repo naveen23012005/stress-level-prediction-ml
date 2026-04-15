@@ -1,9 +1,20 @@
 import streamlit as st
 import pandas as pd
 import joblib
+import boto3
 
-# load trained model
-model = joblib.load("stress_model.pkl")
+def download_model():
+    s3 = boto3.client('s3')
+
+    s3.download_file(
+        "naveen-ml-models",   # bucket name
+        "stress_model.pkl",         # file in S3
+        "model/model.pkl"    # local path
+    )
+download_model()
+
+model = pickle.load(open("model/model.pkl", "rb"))
+
 
 st.title("Stress Level Prediction App")
 
