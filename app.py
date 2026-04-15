@@ -1,16 +1,21 @@
 import streamlit as st
 import pandas as pd
 import joblib
+import os
 import boto3
 import pickle
+
 def download_model():
+    os.makedirs("model", exist_ok=True)  # ✅ creates folder automatically
+
     s3 = boto3.client('s3')
 
     s3.download_file(
-        "naveen-ml-models",   # bucket name
-        "stress_model.pkl",         # file in S3
-        "model/model.pkl"    # local path
+        "naveen-ml-models",
+        "stress_model.pkl",
+        "model/model.pkl"
     )
+
 download_model()
 
 model = pickle.load(open("model/model.pkl", "rb"))
