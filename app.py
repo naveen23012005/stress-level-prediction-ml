@@ -1,22 +1,8 @@
 import streamlit as st
 import pandas as pd
 import joblib
-import os
-import boto3
 
-def download_model():
-    os.makedirs("model", exist_ok=True)  
-
-    s3 = boto3.client('s3')
-
-    s3.download_file(
-        "naveen-ml-models",
-        "stress_model.pkl",
-        "model/model.pkl"
-    )
-download_model()
-model = joblib.load("model/model.pkl")
-
+model = joblib.load("stress_model.pkl")
 
 st.title("Stress Level Prediction App")
 

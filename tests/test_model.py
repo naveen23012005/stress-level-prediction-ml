@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 def test_model_performance():
-    model = joblib.load("model/model.pkl")
+    model = joblib.load("stress_model.pkl")
 
     # Example test data (replace with real validation data)
     x_test = np.array([[55, 'Male', 'Teacher', 9.88, 37, 6.81, 4.08, 4, 11, 40, 10.0,
