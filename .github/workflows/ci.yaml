@@ -27,11 +27,7 @@ jobs:
       run: |
         pip install -r requirements.txt
 
-    - name: Download model
-      run: |
-        python download_model.py
-
-    # 5. Run tests
+    # 4. Run tests
     - name: Run tests
       run: |
         pytest -v
