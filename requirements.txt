@@ -5,3 +5,4 @@ pandas==3.0.2
 seaborn==0.13.2
 matplotlib==3.10.8
 boto3
+pytest
