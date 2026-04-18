@@ -13,7 +13,7 @@ def download_model():
     )
 download_model()
 
-model = pickle.load(open("model/model.pkl", "rb"))
+model = joblib.load(open("model/model.pkl", "rb"))
 
 
 st.title("Stress Level Prediction App")
