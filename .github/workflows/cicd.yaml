@@ -40,29 +40,15 @@ jobs:
                 context: .
                 push: true
                 tags: ${{ secrets.DOCKERHUB_USERNAME }}/stress-app:latest
-            - name: Blue-Green Deploy to EC2
+            - name: Deploy to EC2
               uses: appleboy/ssh-action@v0.1.10
               with:
                 host: ${{ secrets.EC2_HOST }}
                 username: ${{ secrets.EC2_USER }}
                 key: ${{ secrets.EC2_KEY }}
                 script: |
-                  IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/stress-app:latest
-
-                  docker pull $IMAGE
-
-                  docker stop stress-app-green || true
-                  docker rm stress-app-green || true
-                  docker run -d -p 8053:8501 --name stress-app-green $IMAGE
-
-                  sleep 15
-
-                  curl -f http://localhost:8053 || exit 1
-
+                  docker pull ${{ secrets.DOCKERHUB_USERNAME }}/stress-app:latest
                   docker stop stress-app || true
                   docker rm stress-app || true
-
-                  docker run -d -p 8052:8501 --name stress-app $IMAGE
-
-                  docker stop stress-app-green || true
-                  docker rm stress-app-green || true
+                  docker run -d -p 8052:8501 --name stress-app \
+                   ${{ secrets.DOCKERHUB_USERNAME }}/stress-app:latest
