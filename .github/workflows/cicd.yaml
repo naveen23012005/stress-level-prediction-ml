@@ -40,15 +40,47 @@ jobs:
                 context: .
                 push: true
                 tags: ${{ secrets.DOCKERHUB_USERNAME }}/stress-app:latest
-            - name: Deploy to EC2
+            - name: Deploy to EC2 (Blue-Green)
               uses: appleboy/ssh-action@v0.1.10
               with:
                 host: ${{ secrets.EC2_HOST }}
                 username: ${{ secrets.EC2_USER }}
                 key: ${{ secrets.EC2_KEY }}
                 script: |
-                  docker pull ${{ secrets.DOCKERHUB_USERNAME }}/stress-app:latest
-                  docker stop stress-app || true
-                  docker rm stress-app || true
-                  docker run -d -p 8052:8501 --name stress-app \
-                   ${{ secrets.DOCKERHUB_USERNAME }}/stress-app:latest
+                  IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/stress-app:latest
+
+                  echo "Pull latest image"
+                  docker pull $IMAGE
+
+                  echo "Check current running container"
+                  if docker ps --format '{{.Names}}' | grep -q stress-blue; then
+
+                      CURRENT=blue
+                      NEW=green
+                      NEW_PORT=8053
+                      OLD_PORT=8052
+                  else
+                      CURRENT=green
+                      NEW=blue
+                      NEW_PORT=8052
+                      OLD_PORT=8053
+                  fi
+
+                  echo "Running new version on $NEW ($NEW_PORT)"
+
+                  docker stop stress-$NEW || true
+                  docker rm stress-$NEW || true
+
+                  docker run -d -p $NEW_PORT:8501 --name stress-$NEW $IMAGE
+
+                  echo "Waiting for app to start..."
+                  sleep 10
+
+                  echo "Health check..."
+                  curl -f http://localhost:$NEW_PORT || exit 1
+
+                  echo "Stopping old version ($CURRENT)"
+                  docker stop stress-$CURRENT || true
+                  docker rm stress-$CURRENT || true
+
+                  echo "Switch complete!"
