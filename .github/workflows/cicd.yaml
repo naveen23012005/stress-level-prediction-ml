@@ -75,7 +75,7 @@ jobs:
            challanaveen409/health:$IMAGE_TAG
 
            echo "Waiting for app..."
-           sleep 20
+           sleep 150
 
            echo "Health check..."
            if ! curl -f http://localhost:$NEW_PORT; then
