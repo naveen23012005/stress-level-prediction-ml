@@ -9,7 +9,7 @@ The final model is deployed as an interactive web application where users can in
 ---
 
 ## 🎯 Objectives
-The main objectives of this project are:
+The main objectives of this project area:
 
 - Analyze the relationship between smartphone usage and stress levels.
 - Perform **Exploratory Data Analysis (EDA)** to identify patterns in the dataset.
