@@ -2,7 +2,7 @@ name: Deploy Stress Level Prediction Backend (Blue-Green Dev)
 
 on:
   push:
-    branches: ["main", "temp"]
+    branches: ["main"]
 
 jobs:
   deploy:
