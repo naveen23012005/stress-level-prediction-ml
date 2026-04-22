@@ -2,7 +2,7 @@ name: Deploy Stress Level Prediction Backend (Blue-Green Dev)
 
 on:
   push:
-    branches: ["main","temp"]
+    branches: ["main", "temp"]
 
 jobs:
   deploy:
@@ -26,74 +26,85 @@ jobs:
           exit-code: 1
           ignore-unfixed: true
           severity: CRITICAL
+
       # 4. Login to DockerHub
       - name: Login to DockerHub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
       # 5. Push Docker image
       - name: Push Docker image
         run: docker push challanaveen409/health:${{ github.sha }}
-      # 6. Deploy to EC2 (Blue-Green)
-      - name: Deploy to EC2 via SSH
+
+      # 6. Deploy to EC2 via SSH
+      - name: Deploy to EC2 via SSH (Blue-Green)
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_KEY }}
           script: |
-           set -e
+            set -e
 
-           IMAGE_TAG=${{ github.sha }}
-           NGINX_CONF="/etc/nginx/sites-available/health.conf"
+            IMAGE_TAG=${{ github.sha }}
+            NGINX_CONF="/etc/nginx/sites-available/health.conf"
 
-           echo "Pulling latest image..."
-           docker pull challanaveen409/health:$IMAGE_TAG
+            echo "Pulling latest image..."
+            docker pull challanaveen409/health:$IMAGE_TAG
 
-           echo "Detecting active port..."
-           ACTIVE_PORT=$(grep -E "server 127.0.0.1:[0-9]+" $NGINX_CONF | grep -v down | grep -oP '127\.0\.0\.1:\K[0-9]+' | head -1)
+            echo "Detecting active port..."
+            ACTIVE_PORT=$(grep -E "server 127.0.0.1:[0-9]+" $NGINX_CONF | grep -v down | grep -oP '127\.0\.0\.1:\K[0-9]+' | head -1)
 
-           if [ "$ACTIVE_PORT" = "8003" ]; then
-            NEW_PORT=8004
-            ACTIVE_COLOR="blue"
-            NEW_COLOR="green"
-           else
-            NEW_PORT=8003
-            ACTIVE_COLOR="green"
-            NEW_COLOR="blue"
-           fi
+            if [ "$ACTIVE_PORT" = "8003" ]; then
+              NEW_PORT=8004
+              ACTIVE_COLOR="blue"
+              NEW_COLOR="green"
+            else
+              NEW_PORT=8003
+              ACTIVE_COLOR="green"
+              NEW_COLOR="blue"
+            fi
 
-           echo "Active: $ACTIVE_COLOR ($ACTIVE_PORT)"
-           echo "Deploying: $NEW_COLOR ($NEW_PORT)"
+            echo "Active: $ACTIVE_COLOR ($ACTIVE_PORT)"
+            echo "Deploying: $NEW_COLOR ($NEW_PORT)"
 
-           docker stop health-$NEW_COLOR || true
-           docker rm health-$NEW_COLOR || true
+            echo "Cleaning old container..."
+            docker stop health-$NEW_COLOR || true
+            docker rm health-$NEW_COLOR || true
 
-           echo "Starting new container..."
-           docker run -d \
-           --restart unless-stopped \
-           --name health-$NEW_COLOR \
-           -p $NEW_PORT:8501 \
-           challanaveen409/health:$IMAGE_TAG
+            echo "Freeing port if already used..."
+            docker ps -q --filter "publish=$NEW_PORT" | xargs -r docker stop
+            docker ps -aq --filter "publish=$NEW_PORT" | xargs -r docker rm
 
-           echo "Waiting for app..."
-           sleep 50
+            echo "Starting new container..."
+            docker run -d \
+              --restart unless-stopped \
+              --name health-$NEW_COLOR \
+              -p $NEW_PORT:8501 \
+              challanaveen409/health:$IMAGE_TAG
 
-           echo "Health check..."
-           if ! curl -f http://localhost:$NEW_PORT; then
-            echo "Health check failed!"
-            docker stop health-$NEW_COLOR
-            docker rm health-$NEW_COLOR
-            exit 1
-           fi
- 
-           echo "Switching traffic..."
-           sudo sed -i "s/server 127.0.0.1:$NEW_PORT .*down;/server 127.0.0.1:$NEW_PORT weight=100;/" $NGINX_CONF
-           sudo sed -i "s/server 127.0.0.1:$ACTIVE_PORT .*;/server 127.0.0.1:$ACTIVE_PORT down;/" $NGINX_CONF
+            echo "Waiting for app..."
+            sleep 20
 
-           sudo nginx -t
-           sudo systemctl reload nginx
+            echo "Health check..."
+            if ! curl -f http://localhost:$NEW_PORT; then
+              echo "Health check failed!"
+              docker stop health-$NEW_COLOR
+              docker rm health-$NEW_COLOR
+              exit 1
+            fi
 
-           echo "Stopping old container..."
-           docker stop health-$ACTIVE_COLOR || true
-           docker rm health-$ACTIVE_COLOR || true
+            echo "Switching traffic in Nginx..."
+            sudo sed -i "s/server 127.0.0.1:$NEW_PORT .*down;/server 127.0.0.1:$NEW_PORT weight=100;/" $NGINX_CONF
+            sudo sed -i "s/server 127.0.0.1:$ACTIVE_PORT .*;/server 127.0.0.1:$ACTIVE_PORT down;/" $NGINX_CONF
 
-           echo "Deployment successfully completed!"
+            sudo nginx -t
+            sudo systemctl reload nginx
+
+            echo "Stopping old container..."
+            docker stop health-$ACTIVE_COLOR
+            docker rm health-$ACTIVE_COLOR
+
+            echo "Cleaning unused Docker images..."
+            docker image prune -f
+
+            echo "Deployment successful!"
