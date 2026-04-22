@@ -3,8 +3,7 @@
 ## 📌 Project Overview
 This project aims to predict an individual's **stress level** based on lifestyle factors such as smartphone usage, sleep patterns, caffeine intake, and physical activity. With the increasing use of digital devices, understanding the relationship between technology usage and mental health has become very important.
 
-Using a dataset of **15,000 individuals**, this project applies **machine learning techniques** to analyze behavioral patterns and predict stress levels.
-
+Using a dataset of **15,000 individuals**, this project applies **machine learning techniques** to analyze behavioral patterns and predict stress levels.   
 The final model is deployed as an interactive web application where users can input their lifestyle details and receive a predicted stress score.
 
 ---
