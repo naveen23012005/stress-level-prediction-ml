@@ -42,58 +42,58 @@ jobs:
           script: |
            set -e
 
-            IMAGE_TAG=${{ github.sha }}
-            NGINX_CONF="/etc/nginx/sites-available/health.conf"
+           IMAGE_TAG=${{ github.sha }}
+           NGINX_CONF="/etc/nginx/sites-available/health.conf"
 
-            echo "Pulling latest image..."
-            docker pull challanaveen409/health:$IMAGE_TAG
+           echo "Pulling latest image..."
+           docker pull challanaveen409/health:$IMAGE_TAG
 
-            echo "Detecting active port..."
-            ACTIVE_PORT=$(grep -E "server 127.0.0.1:[0-9]+" $NGINX_CONF | grep -v down | grep -oP '127\.0\.0\.1:\K[0-9]+' | head -1)
+           echo "Detecting active port..."
+           ACTIVE_PORT=$(grep -E "server 127.0.0.1:[0-9]+" $NGINX_CONF | grep -v down | grep -oP '127\.0\.0\.1:\K[0-9]+' | head -1)
 
-            if [ "$ACTIVE_PORT" = "8003" ]; then
-              NEW_PORT=8004
-              ACTIVE_COLOR="blue"
-              NEW_COLOR="green"
-            else
-              NEW_PORT=8003
-              ACTIVE_COLOR="green"
-              NEW_COLOR="blue"
-            fi
+           if [ "$ACTIVE_PORT" = "8003" ]; then
+            NEW_PORT=8004
+            ACTIVE_COLOR="blue"
+            NEW_COLOR="green"
+           else
+            NEW_PORT=8003
+            ACTIVE_COLOR="green"
+            NEW_COLOR="blue"
+           fi
 
-            echo "Active: $ACTIVE_COLOR ($ACTIVE_PORT)"
-            echo "Deploying: $NEW_COLOR ($NEW_PORT)"
+           echo "Active: $ACTIVE_COLOR ($ACTIVE_PORT)"
+           echo "Deploying: $NEW_COLOR ($NEW_PORT)"
 
-            docker stop health-$NEW_COLOR || true
-            docker rm health-$NEW_COLOR || true
+           docker stop health-$NEW_COLOR || true
+           docker rm health-$NEW_COLOR || true
 
-            echo "Starting new container..."
-            docker run -d \
-            --restart unless-stopped \
-            --name health-$NEW_COLOR \
-            -p $NEW_PORT:8501 \
-            challanaveen409/health:$IMAGE_TAG
+           echo "Starting new container..."
+           docker run -d \
+           --restart unless-stopped \
+           --name health-$NEW_COLOR \
+           -p $NEW_PORT:8501 \
+           challanaveen409/health:$IMAGE_TAG
 
-            echo "Waiting for app..."
-            sleep 20
+           echo "Waiting for app..."
+           sleep 20
 
-            echo "Health check..."
-            if ! curl -f http://localhost:$NEW_PORT; then
-             echo "Health check failed!"
-             docker stop health-$NEW_COLOR
-             docker rm health-$NEW_COLOR
-             exit 1
-            fi
+           echo "Health check..."
+           if ! curl -f http://localhost:$NEW_PORT; then
+            echo "Health check failed!"
+            docker stop health-$NEW_COLOR
+            docker rm health-$NEW_COLOR
+            exit 1
+           fi
+ 
+           echo "Switching traffic..."
+           sudo sed -i "s/server 127.0.0.1:$NEW_PORT .*down;/server 127.0.0.1:$NEW_PORT weight=100;/" $NGINX_CONF
+           sudo sed -i "s/server 127.0.0.1:$ACTIVE_PORT .*;/server 127.0.0.1:$ACTIVE_PORT down;/" $NGINX_CONF
 
-            echo "Switching traffic..."
-            sudo sed -i "s/server 127.0.0.1:$NEW_PORT .*down;/server 127.0.0.1:$NEW_PORT weight=100;/" $NGINX_CONF
-            sudo sed -i "s/server 127.0.0.1:$ACTIVE_PORT .*;/server 127.0.0.1:$ACTIVE_PORT down;/" $NGINX_CONF
+           sudo nginx -t
+           sudo systemctl reload nginx
 
-            sudo nginx -t
-            sudo systemctl reload nginx
+           echo "Stopping old container..."
+           docker stop health-$ACTIVE_COLOR || true
+           docker rm health-$ACTIVE_COLOR || true
 
-            echo "Stopping old container..."
-            docker stop health-$ACTIVE_COLOR
-            docker rm health-$ACTIVE_COLOR
-
-            echo "Deployment successful!"            
+           echo "Deployment successful!"
