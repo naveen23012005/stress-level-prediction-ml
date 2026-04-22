@@ -88,8 +88,8 @@ jobs:
             echo "Health check..."
             if ! curl -f http://localhost:$NEW_PORT; then
               echo "Health check failed!"
-              docker stop health-$NEW_COLOR
-              docker rm health-$NEW_COLOR
+              docker stop health-$ACTIVE_COLOR || true
+              docker rm health-$ACTIVE_COLOR || true
               exit 1
             fi
 
@@ -101,8 +101,8 @@ jobs:
             sudo systemctl reload nginx
 
             echo "Stopping old container..."
-            docker stop health-$ACTIVE_COLOR
-            docker rm health-$ACTIVE_COLOR
+            docker stop health-$ACTIVE_COLOR || true
+            docker rm health-$ACTIVE_COLOR || trueR
 
             echo "Cleaning unused Docker images..."
             docker image prune -f
