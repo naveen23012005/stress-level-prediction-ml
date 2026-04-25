@@ -1,8 +1,14 @@
-name: Deploy Stress Level Prediction Backend (Blue-Green Dev)
+name: Deploy Stress Level App (ECR + EC2)
 
 on:
   push:
     branches: ["main"]
+
+env:
+  AWS_REGION: ap-south-1
+  ECR_REPOSITORY: stress_ecr
+  ECR_REGISTRY: 920562273229.dkr.ecr.ap-south-1.amazonaws.com
+  IMAGE_TAG: ${{ github.sha }}
 
 jobs:
   deploy:
@@ -13,30 +19,47 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 2. Build Docker image
-      - name: Build Docker image
-        run: docker build --no-cache -t challanaveen409/health:${{ github.sha }} .
+      # 2. Configure AWS credentials
+      - name: Configure AWS credentials
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set region $AWS_REGION
 
-      # 3. Security scan using Trivy
+      # 3. Login to ECR
+      - name: Login to AWS ECR
+        run: |
+          aws ecr get-login-password --region $AWS_REGION \
+          | docker login --username AWS --password-stdin $ECR_REGISTRY
+
+      # 4. Build Docker image
+      - name: Build Docker image
+        run: docker build --no-cache -t $ECR_REPOSITORY:$IMAGE_TAG .
+
+      # 5. Scan image using Trivy
       - name: Scan Docker image with Trivy
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: challanaveen409/health:${{ github.sha }}
+          image-ref: ${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
           format: table
           exit-code: 1
           ignore-unfixed: true
           severity: CRITICAL
 
-      # 4. Login to DockerHub
-      - name: Login to DockerHub
-        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+      # 6. Tag image
+      - name: Tag Docker image
+        run: |
+          docker tag $ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker tag $ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
-      # 5. Push Docker image
+      # 7. Push to ECR
       - name: Push Docker image
-        run: docker push challanaveen409/health:${{ github.sha }}
+        run: |
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
-      # 6. Deploy to EC2 via SSH
-      - name: Deploy to EC2 via SSH (Blue-Green)
+      # 8. Deploy to EC2 (Normal Deployment)
+      - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -45,66 +68,30 @@ jobs:
           script: |
             set -e
 
+            AWS_REGION=ap-south-1
+            ECR_REGISTRY=920562273229.dkr.ecr.ap-south-1.amazonaws.com
+            ECR_REPOSITORY=stress_ecr
             IMAGE_TAG=${{ github.sha }}
-            NGINX_CONF="/etc/nginx/sites-available/health.conf"
 
-            echo "Pulling latest image..."
-            docker pull challanaveen409/health:$IMAGE_TAG
+            echo "Login to ECR..."
+            aws ecr get-login-password --region $AWS_REGION \
+            | docker login --username AWS --password-stdin $ECR_REGISTRY
 
-            echo "Detecting active port..."
-            ACTIVE_PORT=$(grep -E "server 127.0.0.1:[0-9]+" $NGINX_CONF | grep -v down | grep -oP '127\.0\.0\.1:\K[0-9]+' | head -1)
+            echo "Pull latest image..."
+            docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-            if [ "$ACTIVE_PORT" = "8003" ]; then
-              NEW_PORT=8004
-              ACTIVE_COLOR="blue"
-              NEW_COLOR="green"
-            else
-              NEW_PORT=8003
-              ACTIVE_COLOR="green"
-              NEW_COLOR="blue"
-            fi
+            echo "Stop old container..."
+            docker stop stress-app || true
+            docker rm stress-app || true
 
-            echo "Active: $ACTIVE_COLOR ($ACTIVE_PORT)"
-            echo "Deploying: $NEW_COLOR ($NEW_PORT)"
-
-            echo "Cleaning old container..."
-            docker stop health-$NEW_COLOR || true
-            docker rm health-$NEW_COLOR || true
-
-            echo "Freeing port if already used..."
-            docker ps -q --filter "publish=$NEW_PORT" | xargs -r docker stop
-            docker ps -aq --filter "publish=$NEW_PORT" | xargs -r docker rm
-
-            echo "Starting new container..."
+            echo "Run new container..."
             docker run -d \
               --restart unless-stopped \
-              --name health-$NEW_COLOR \
-              -p $NEW_PORT:8501 \
-              challanaveen409/health:$IMAGE_TAG
+              --name stress-app \
+              -p 8501:8501 \
+              $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-            echo "Waiting for app..."
-            sleep 20
-
-            echo "Health check..."
-            if ! curl -f http://localhost:$NEW_PORT; then
-              echo "Health check failed!"
-              docker stop health-$ACTIVE_COLOR || true
-              docker rm health-$ACTIVE_COLOR || true
-              exit 1
-            fi
-
-            echo "Switching traffic in Nginx..."
-            sudo sed -i "s/server 127.0.0.1:$NEW_PORT .*down;/server 127.0.0.1:$NEW_PORT weight=100;/" $NGINX_CONF
-            sudo sed -i "s/server 127.0.0.1:$ACTIVE_PORT .*;/server 127.0.0.1:$ACTIVE_PORT down;/" $NGINX_CONF
-
-            sudo nginx -t
-            sudo systemctl reload nginx
-
-            echo "Stopping old container..."
-            docker stop health-$ACTIVE_COLOR || true
-            docker rm health-$ACTIVE_COLOR || trueR
-
-            echo "Cleaning unused Docker images..."
+            echo "Cleaning unused images..."
             docker image prune -f
 
             echo "Deployment successful!"
