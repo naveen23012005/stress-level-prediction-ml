@@ -2,7 +2,7 @@ name: Deploy Stress Level App (ECR + EC2)
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main","temp"]
 
 env:
   AWS_REGION: ap-south-1
