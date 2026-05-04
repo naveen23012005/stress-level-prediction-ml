@@ -64,6 +64,9 @@ EDA revealed strong relationships between **sleep quality, screen time, and stre
 - Seaborn
 - Scikit-learn
 - Streamlit
+- Dockers
+- AWS
+- CICD
 
 ---
 
@@ -95,8 +98,6 @@ This indicates that the model can accurately predict stress levels based on life
 
 The trained model has been deployed as a web application.
 
-🔗 **Live Demo:**  
-https://stress-prediction-app.onrender.com/
 
 Users can enter lifestyle information such as:
 
@@ -110,16 +111,6 @@ Users can enter lifestyle information such as:
 The system then predicts the user's **stress level in real time**.
 
 ---
-
-## 📂 Project Structure
-
-stress-level-prediction-ml
-│
-├── app.py
-├── stress_model.pkl
-├── requirements.txt
-├── dataset.csv
-└── README.md
 
 
 ---
