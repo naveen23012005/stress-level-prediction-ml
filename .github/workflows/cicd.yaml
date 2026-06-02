@@ -54,11 +54,8 @@ jobs:
 
       # Install project dependencies
       - name: Install Dependencies
-
-        # npm ci installs exact versions from package-lock.json
-        run: npm ci
-
-
+        working-directory: frontend
+        run: npm install
       # Run Angular lint validation
     # - name: Run Lint Check
 
