@@ -83,7 +83,7 @@ jobs:
  
       # Build Angular production application
       - name: Build Angular Production App
-        run: ng build --configuration production
+        run: npx ng build --configuration production
 
       # Verify build output exists
       - name: Verify Build Output
