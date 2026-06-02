@@ -40,12 +40,12 @@ jobs:
 
       - name: Verify Build Output
         run: |
-          if [ ! -d "frontend/dist/stress-level-prediction/browser" ]; then
+          if [ ! -d "frontend/dist/frontend/browser" ]; then
             echo "Build folder missing!"
             exit 1
           fi
 
-          if [ ! -f "frontend/dist/stress-level-prediction/browser/index.html" ]; then
+          if [ ! -f "frontend/dist/frontend/browser/index.html" ]; then
             echo "index.html missing!"
             exit 1
           fi
@@ -65,13 +65,13 @@ jobs:
 
       - name: Upload Static Assets
         run: |
-          aws s3 sync frontend/dist/stress-level-prediction/browser s3://${{ secrets.S3_BUCKET_NAME }} \
+          aws s3 sync frontend/dist/frontend/browser s3://${{ secrets.S3_BUCKET_NAME }} \
             --exclude "index.html" \
             --cache-control "public,max-age=31536000,immutable"
 
       - name: Upload index.html
         run: |
-          aws s3 cp frontend/dist/stress-level-prediction/browser/index.html \
+          aws s3 cp frontend/dist/frontend/browser/index.html \
           s3://${{ secrets.S3_BUCKET_NAME }}/index.html \
           --cache-control "no-cache,no-store,must-revalidate"
 
