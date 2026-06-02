@@ -50,12 +50,7 @@ jobs:
         with:
 
           # Node.js version used for Angular build
-          node-version: 20
-
-          # Cache npm dependencies for faster builds
-          cache: npm
-          cache-dependency-path: package-lock.json
- 
+          node-version: "20"
 
       # Install project dependencies
       - name: Install Dependencies
