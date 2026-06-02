@@ -1,0 +1,57 @@
+<div class="container">
+  <h1>Stress Level Prediction</h1>
+
+  <form (ngSubmit)="onSubmit()">
+
+    <label>Age</label>
+    <input type="number" [(ngModel)]="formData.age" name="age" required>
+
+    <label>Gender</label>
+    <select [(ngModel)]="formData.gender" name="gender" required>
+      <option value="male">Male</option>
+      <option value="female">Female</option>
+    </select>
+
+    <label>Occupation</label>
+    <input type="text" [(ngModel)]="formData.occupation" name="occupation" required>
+
+    <label>Daily Screen Time Hours</label>
+    <input type="number" [(ngModel)]="formData.daily_screen_time_hours" name="daily_screen_time_hours" required>
+
+    <label>Phone Usage Before Sleep Minutes</label>
+    <input type="number" [(ngModel)]="formData.phone_usage_before_sleep_minutes" name="phone_usage_before_sleep_minutes" required>
+
+    <label>Sleep Duration Hours</label>
+    <input type="number" [(ngModel)]="formData.sleep_duration_hours" name="sleep_duration_hours" required>
+
+    <label>Sleep Quality Score</label>
+    <input type="number" [(ngModel)]="formData.sleep_quality_score" name="sleep_quality_score" required>
+
+    <label>Caffeine Intake Cups</label>
+    <input type="number" [(ngModel)]="formData.caffeine_intake_cups" name="caffeine_intake_cups" required>
+
+    <label>Physical Activity Minutes</label>
+    <input type="number" [(ngModel)]="formData.physical_activity_minutes" name="physical_activity_minutes" required>
+
+    <label>Notifications Received Per Day</label>
+    <input type="number" [(ngModel)]="formData.notifications_received_per_day" name="notifications_received_per_day" required>
+
+    <label>Mental Fatigue Score</label>
+    <input type="number" [(ngModel)]="formData.mental_fatigue_score" name="mental_fatigue_score" required>
+
+    <button type="submit" [disabled]="loading">
+      {{ loading ? 'Predicting...' : 'Predict Stress' }}
+    </button>
+  </form>
+
+  <div class="result" *ngIf="result">
+    <h2>Prediction Result</h2>
+    <p><strong>Stress Score:</strong> {{ result.stress_score }}</p>
+    <p><strong>Stress Category:</strong> {{ result.stress_category }}</p>
+    <p><strong>Message:</strong> {{ result.message }}</p>
+  </div>
+
+  <div class="error" *ngIf="errorMessage">
+    {{ errorMessage }}
+  </div>
+</div>
