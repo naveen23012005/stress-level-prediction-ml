@@ -1,4 +1,4 @@
-name: frontend deployment
+name : frontend deployment
 # Trigger workflow when code is pushed
 on:
 
